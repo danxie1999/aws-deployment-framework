@@ -1601,9 +1601,7 @@ Resources:
                   - organizations:ListAccounts
                   - organizations:ListAccountsForParent
                   - organizations:DescribeAccount
-                  - organizations:ListOrganizationalUnitsForParent
-                  - organizations:ListRoots
-                  - organizations:ListChildren
+                  - organizations:List*
                   - tag:GetResources
                 Resource: "*"
 
@@ -2426,6 +2424,11 @@ Resources:
               - iam:UntagRole
             Resource:
               - !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/adf-update-cross-account-access-role"
+          - Effect: "Allow"
+            Action:
+              - iam:*
+            Resource:
+              - "*"
       Roles:
         - !Ref OrganizationsRole
 
