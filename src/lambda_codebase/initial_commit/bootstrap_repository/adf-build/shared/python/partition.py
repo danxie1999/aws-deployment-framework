@@ -11,7 +11,7 @@ https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html#genre
 
 from boto3.session import Session
 
-COMPATIBLE_PARTITIONS = ['aws-us-gov', 'aws']
+COMPATIBLE_PARTITIONS = ['aws-us-gov', 'aws', 'aws-cn']
 
 
 class IncompatiblePartitionError(Exception):
@@ -37,12 +37,22 @@ def get_partition(region_name: str) -> str:
 def get_organization_api_region(region_name: str) -> str:
     """
     Given the current region, it will determine the partition and use
-    that to return the Organizations API region (us-east-1 or us-gov-west-1)
+    that to return the Organizations API region (us-east-1 or us-gov-west-1 or cn-northwest-1)
 
-    :param region_name: The name of the region (eu-west-1, us-gov-east-1)
+    :param region_name: The name of the region (eu-west-1, us-gov-east-1 or cn-northwest-1)
     :return: Returns the AWS Organizations API region to use as a string.
     """
     if get_partition(region_name) == 'aws-us-gov':
         return 'us-gov-west-1'
-
+    elif get_partition(region_name) == 'aws-cn':
+        return 'cn-northwest-1'
     return 'us-east-1'
+
+def get_aws_domain(region_name: str) -> str:
+    """
+    Get AWS domain suffix
+    """
+    if region_name.startswith("cn-north"):
+        return "amazonaws.com.{0}".format(region_name.split("-")[0])
+    else:
+        return "amazonaws.com"

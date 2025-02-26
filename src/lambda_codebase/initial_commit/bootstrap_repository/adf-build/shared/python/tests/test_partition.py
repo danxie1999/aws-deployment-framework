@@ -18,11 +18,13 @@ _govcloud_regions = [
     'us-gov-east-1'
 ]
 
-_incompatible_regions = [
-    'cn-north-1',
-    'cn-northwest-1'
+_china_region = [
+    'cn-north-1'
 ]
 
+_incompatible_regions = [
+    'cn-northwest-1'
+]
 
 @pytest.mark.parametrize('region', _govcloud_regions)
 def test_partition_govcloud_regions(region):
@@ -33,6 +35,9 @@ def test_partition_govcloud_regions(region):
 def test_partition_us_commercial_regions(region):
     assert get_partition(region) == 'aws'
 
+@pytest.mark.parametrize('region', _china_region)
+def test_partition_china_regions(region):
+    assert get_partition(region) == 'aws-cn'
 
 @pytest.mark.parametrize('region', _incompatible_regions)
 def test_partition_incompatible_regions(region):
