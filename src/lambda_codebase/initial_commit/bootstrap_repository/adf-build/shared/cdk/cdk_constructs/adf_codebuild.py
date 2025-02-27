@@ -28,6 +28,22 @@ DEFAULT_DEPLOY_SPEC_FILENAME = 'deployspec.yml'
 ADF_DEFAULT_BUILD_ROLE_NAME = 'adf-codebuild-role'
 ADF_DEFAULT_BUILD_TIMEOUT = 20
 
+def get_partition(region_name: str) -> str:
+    """Given the region, this function will return the appropriate partition.
+
+    :param region_name: The name of the region (us-east-1, us-gov-west-1)
+    :return: Returns the partition name as a string.
+    """
+
+    if region_name.startswith('us-gov'):
+        return 'aws-us-gov'
+    elif region_name.startswith("cn-north"):
+        return "aws-cn"
+    return 'aws'
+
+
+ADF_DEPLOYMENT_PARTITION = get_partition(ADF_DEPLOYMENT_REGION)
+
 
 class CodeBuild(Construct):
     # pylint: disable=no-value-for-parameter, too-many-locals
@@ -380,7 +396,7 @@ class CodeBuild(Construct):
 
             if repository_name:
                 repository_arn = (
-                    f"arn:aws:ecr:{ADF_DEPLOYMENT_REGION}:"
+                    f"arn:{ADF_DEPLOYMENT_PARTITION}:ecr:{ADF_DEPLOYMENT_REGION}:"
                     f"{ADF_DEPLOYMENT_ACCOUNT_ID}:repository/{repository_name}"
                 )
 
