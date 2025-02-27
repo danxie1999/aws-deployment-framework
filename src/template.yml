@@ -1611,12 +1611,7 @@ Resources:
               - !Sub "arn:${AWS::Partition}:events:cn-northwest-1:${AWS::AccountId}:rule/adf-regional-base-china*"
           - Effect: "Allow"
             Action:
-              - "cloudformation:CreateStack"
-              - "cloudformation:UpdateStack"
-              - "cloudformation:DeleteStack"
-              - "cloudformation:DescribeStacks"
-              - "cloudformation:DescribeStackEvents"
-              - "cloudformation:DescribeStackResources"
+              - "cloudformation:*"
             Resource:
               - !Sub "arn:${AWS::Partition}:cloudformation:cn-northwest-1:${AWS::AccountId}:stack/adf-regional-base-china-bucket/*"
       Roles:
