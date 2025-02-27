@@ -1615,7 +1615,12 @@ Resources:
             Resource:
               - !Sub "arn:${AWS::Partition}:cloudformation:cn-northwest-1:${AWS::AccountId}:stack/adf-regional-base-china-bucket/*"
               - !Sub "arn:${AWS::Partition}:cloudformation:cn-northwest-1:${AWS::AccountId}:stack/adf-regional-base-china-extra/*"
-
+          - Effect: "Allow"
+            Action:
+              - "cloudformation:ValidateTemplate"
+              - "cloudformation:List*"
+              - "cloudformation:Describe*"
+            Resource: "*"
       Roles:
         - !Ref BootstrapCodeBuildRole
 
