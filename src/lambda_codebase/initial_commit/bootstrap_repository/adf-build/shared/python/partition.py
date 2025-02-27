@@ -10,29 +10,26 @@ https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html#genre
 """
 
 from boto3.session import Session
+from botocore.exceptions import UnknownRegionError
 
-COMPATIBLE_PARTITIONS = ['aws-us-gov', 'aws', 'aws-cn']
-
-
-class IncompatiblePartitionError(Exception):
-    """Raised in case the partition is not supported."""
-
+class IncompatibleRegionError(Exception):
+    """Raised in case the regions is not supported."""
+    pass
 
 def get_partition(region_name: str) -> str:
     """Given the region, this function will return the appropriate partition.
 
-    :param region_name: The name of the region (us-east-1, us-gov-west-1)
+    :param region_name: The name of the region (us-east-1, us-gov-west-1, cn-north-1)
+    :raises IncompatibleRegionError: If the provided region is not supported.
     :return: Returns the partition name as a string.
     """
-    partition = Session().get_partition_for_region(region_name)
-    if partition not in COMPATIBLE_PARTITIONS:
-        raise IncompatiblePartitionError(
-            f'The {partition} partition is not supported by this version of '
-            'ADF yet.'
+    try:
+        partition = Session().get_partition_for_region(region_name)
+    except UnknownRegionError as e:
+        raise IncompatibleRegionError(
+            f'The region {region_name} is not supported.'
         )
-
     return partition
-
 
 def get_organization_api_region(region_name: str) -> str:
     """
