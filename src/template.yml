@@ -1746,7 +1746,7 @@ Resources:
                   if [ "${AWS_REGION}" = "cn-north-1" ]; then
                     python adf-build/china-support/create_s3_cn.py
                     sam build -t adf-build/china-support/cn_northwest_deploy.yml --region cn-northwest-1
-                    sam package --output-template-file adf-build/china-support/cn_northwest_deploy.yml --s3-prefix adf-bootstrap --s3-bucket adf-china-bootstrap-cn-northwest-1-${MASTER_ACCOUNT_ID} --region cn-northwest-1
+                    sam package --output-template-file adf-build/china-support/cn_northwest_deploy.yml --s3-prefix adf-bootstrap --s3-bucket adf-china-bootstrap-cn-northwest-1-${MANAGEMENT_ACCOUNT_ID} --region cn-northwest-1
                   fi
                 # Shared Modules to be used with AWS CodeBuild:
                 - >-
