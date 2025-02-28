@@ -1595,9 +1595,13 @@ Resources:
               - "iam:GetRole"
               - "iam:PutRolePolicy"
               - "iam:UpdateAssumeRolePolicy"
+              - "iam:TagRole"
+              - "iam:DeleteRole"
+
             Resource:
               - !Sub "arn:${AWS::Partition}:lambda:*:${AWS::AccountId}:function:ForwardStateMachineFunction"
               - !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/adf-china-extra/adf-regional-base-*"
+              - !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/adf-regional-base-*"
           - Effect: "Allow"
             Action:
               - "s3:*"

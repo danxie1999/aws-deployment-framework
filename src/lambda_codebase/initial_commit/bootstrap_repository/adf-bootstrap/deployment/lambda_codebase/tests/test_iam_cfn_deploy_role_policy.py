@@ -19,7 +19,7 @@ PARTITION = Session().get_partition_for_region(REGION)
 def iam_client():
     client = Mock()
     client.get_role_policy.side_effect = (
-        lambda **kwargs: deepcopy(stub_iam.get_role_policy_cn) if PARTITION == "aws-cn" else deepcopy(stub_iam.get_role_policy)
+        lambda **kwargs: deepcopy(stub_iam.get_role_policy)
     )
     return client
 
@@ -40,7 +40,7 @@ def test_fetch_policy_document(iam_client):
     assert instance.policy_name == policy_name
     assert instance.policy_changed is False
     assert instance.policy_document == (
-        stub_iam.get_role_policy_cn['PolicyDocument'] if PARTITION == "aws-cn" else stub_iam.get_role_policy['PolicyDocument']
+        stub_iam.get_role_policy['PolicyDocument']
     )
 
 
@@ -350,7 +350,7 @@ def test_update_iam_role_policies_updated(iam_client):
             'policy_r2_1',
         ],
     }
-    policy_doc = deepcopy(stub_iam.get_role_policy_cn['PolicyDocument']) if PARTITION == "aws-cn" else deepcopy(stub_iam.get_role_policy['PolicyDocument'])
+    policy_doc = deepcopy(stub_iam.get_role_policy['PolicyDocument'])
     policy_doc['Statement'][1]['Resource'] = [
         policy_doc['Statement'][1]['Resource'][0],
         policy_doc['Statement'][1]['Resource'][1],

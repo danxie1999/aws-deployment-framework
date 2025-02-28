@@ -2,6 +2,12 @@
 # SPDX-License-Identifier: MIT-0
 
 # pylint: skip-file
+import os
+from boto3.session import Session
+
+REGION = os.getenv("AWS_REGION", "us-east-1")
+PARTITION = Session().get_partition_for_region(REGION)
+
 
 """
 Stubs for testing iam.py
@@ -18,7 +24,7 @@ get_role_policy = {
                 "Effect": "Allow",
                 "Action": ["iam:ChangePassword"],
                 "Resource": (
-                    "arn:aws:kms:eu-west-1:111111111111:key/existing_key"
+                    f"arn:{PARTITION}:kms:eu-west-1:111111111111:key/existing_key"
                 ),
             },
             {
@@ -26,41 +32,8 @@ get_role_policy = {
                 "Effect": "Allow",
                 "Action": "s3:ListAllMyBuckets",
                 "Resource": [
-                    "arn:aws:s3:::existing_bucket",
-                    "arn:aws:s3:::existing_bucket/*",
-                ],
-            },
-            {
-                "Sid": "AssumeRole",
-                "Effect": "Allow",
-                "Action": "sts:AssumeRole",
-                "Resource": ['something'],
-            },
-        ]
-    }
-}
-
-get_role_policy_cn = {
-    'RoleName': 'string',
-    'PolicyName': 'string',
-    'PolicyDocument': {
-        "Version": "2012-10-17",
-        "Statement": [
-            {
-                "Sid": "KMS",
-                "Effect": "Allow",
-                "Action": ["iam:ChangePassword"],
-                "Resource": (
-                    "arn:aws-cn:kms:cn-north-1:111111111111:key/existing_key"
-                ),
-            },
-            {
-                "Sid": "S3",
-                "Effect": "Allow",
-                "Action": "s3:ListAllMyBuckets",
-                "Resource": [
-                    "arn:aws-cn:s3:::existing_bucket",
-                    "arn:aws-cn:s3:::existing_bucket/*",
+                    f"arn:{PARTITION}:s3:::existing_bucket",
+                    f"arn:{PARTITION}:s3:::existing_bucket/*",
                 ],
             },
             {
