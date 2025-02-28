@@ -76,7 +76,7 @@ class S3:
 
         if style == 'path':
             if self.partition == "aws-cn":
-                return f"https://{self.bucket}.{s3_region_name}.{self.region}.{self.domain_suffix}/{key}"
+                return f"https://{self.bucket}.s3.{self.region}.{self.domain_suffix}/{key}"
             return f"https://{s3_region_name}.{self.domain_suffix}/{self.bucket}/{key}"
         if style == 'virtual-hosted':
             return f"https://{self.bucket}.{s3_region_name}.{self.domain_suffix}/{key}"
