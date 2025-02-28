@@ -71,12 +71,12 @@ class S3:
             return key
 
         s3_region_name = "s3"
-        if self.region not in ["us-east-1", "cn-north-1", "cn-northwest-1"]:
+        if self.region != 'us-east-1':
             s3_region_name = f"s3-{self.region}"
-        elif self.region in ["cn-north-1", "cn-northwest-1"]:
-            s3_region_name = f"{self.bucket}.s3.{self.region}"
-        
+
         if style == 'path':
+            if self.partition == "aws-cn":
+                return f"https://{self.bucket}.{s3_region_name}.{self.region}.{self.domain_suffix}/{key}"
             return f"https://{s3_region_name}.{self.domain_suffix}/{self.bucket}/{key}"
         if style == 'virtual-hosted':
             return f"https://{self.bucket}.{s3_region_name}.{self.domain_suffix}/{key}"
