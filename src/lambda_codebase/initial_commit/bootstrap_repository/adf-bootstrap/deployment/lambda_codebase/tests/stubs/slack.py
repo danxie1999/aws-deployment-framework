@@ -3,6 +3,7 @@
 
 # pylint: skip-file
 import os
+import re
 from boto3.session import Session
 
 REGION = os.getenv("AWS_REGION", "us-east-1")
@@ -23,7 +24,7 @@ stub_approval_event = {
             'MessageId': '1',
             'TopicArn': f'arn:{PARTITION}:sns:{test_region}:9999999:adf-pipeline-sample-vpc-PipelineSNSTopic-example',
             'Subject': 'APPROVAL NEEDED: AWS CodePipeline adf-pipeline-sample-vpc for action Approve',
-            'Message': '{"region":{},"consoleLink":"https://console.aws.amazon.com","approval":{"pipelineName":"adf-pipeline-sample-vpc","stageName":"approval-stage-1","actionName":"Approve","token":"fa777887-41dc-4ac4-8455-a209a93c76b9","expires":"2019-03-17T11:08Z","externalEntityLink":null,"approvalReviewLink":"https://console.aws.amazon.com/codepipeline/"}}'.format(test_region),
+            'Message': '{"region":"{test_region}","consoleLink":"https://console.aws.amazon.com","approval":{"pipelineName":"adf-pipeline-sample-vpc","stageName":"approval-stage-1","actionName":"Approve","token":"fa777887-41dc-4ac4-8455-a209a93c76b9","expires":"2019-03-17T11:08Z","externalEntityLink":null,"approvalReviewLink":"https://console.aws.amazon.com/codepipeline/"}}',
             'Timestamp': '3000-03-10T11:08:34.673Z',
             'SignatureVersion': '1',
             'Signature': '1',
@@ -33,6 +34,8 @@ stub_approval_event = {
         }
     }]
 }
+
+stub_approval_event['Records'][0]['Sns']['Message'] = re.sub(r"{test_region}", test_region, stub_approval_event['Records'][0]['Sns']['Message'])
 
 stub_bootstrap_event = {
     'Records': [{
@@ -86,7 +89,7 @@ stub_failed_bootstrap_event = {
             'MessageId': '1',
             'TopicArn': f'arn:{PARTITION}:sns:{test_region}:9999999:adf-pipeline-sample-vpc-PipelineSNSTopic-example',
             'Subject': 'Failure - AWS Deployment Framework Bootstrap',
-            'Message': '{"Error":"Exception","Cause":"{\\"errorMessage\\": \\"CloudFormation Stack Failed - Account: 111 Region: {} Status: ROLLBACK_IN_PROGRESS\\", \\"errorType\\": \\"Exception\\", \\"stackTrace\\": [[\\"/var/task/wait_until_complete.py\\", 99, \\"lambda_handler\\", \\"status))\\"]]}"}'.format(test_region),
+            'Message': '{"Error":"Exception","Cause":"{\\"errorMessage\\": \\"CloudFormation Stack Failed - Account: 111 Region: {test_region} Status: ROLLBACK_IN_PROGRESS\\", \\"errorType\\": \\"Exception\\", \\"stackTrace\\": [[\\"/var/task/wait_until_complete.py\\", 99, \\"lambda_handler\\", \\"status))\\"]]}"}',
             'Timestamp': '2019-03-10T11:09:49.953Z',
             'SignatureVersion': '1',
             'Signature': '2',
@@ -96,3 +99,5 @@ stub_failed_bootstrap_event = {
         }
     }]
 }
+
+stub_failed_bootstrap_event['Records'][0]['Sns']['Message'] = re.sub(r"{test_region}", test_region, stub_failed_bootstrap_event['Records'][0]['Sns']['Message'])
