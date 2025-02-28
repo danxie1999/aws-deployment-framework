@@ -8,6 +8,10 @@ from boto3.session import Session
 REGION = os.getenv("AWS_REGION", "us-east-1")
 PARTITION = Session().get_partition_for_region(REGION)
 
+if PARTITION == "aws":
+    test_region =  "eu-west-1"
+else:
+    test_region =  "cn-northwest-1"
 
 """
 Stubs for testing iam.py
@@ -24,7 +28,7 @@ get_role_policy = {
                 "Effect": "Allow",
                 "Action": ["iam:ChangePassword"],
                 "Resource": (
-                    f"arn:{PARTITION}:kms:eu-west-1:111111111111:key/existing_key"
+                    f"arn:{PARTITION}:kms:{test_region}:111111111111:key/existing_key"
                 ),
             },
             {
