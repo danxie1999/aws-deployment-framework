@@ -188,7 +188,6 @@ def prepare_deployment_account(sts, deployment_account_id, config):
             .get('default-scm-codecommit-account-id', deployment_account_id)
         )
     )
-    # TODO merge
     deployment_account_parameter_store.put_parameter(
         'scm/default-s3-source-bucket-name',
         (
@@ -265,14 +264,14 @@ def worker_thread(
 
     organizations = Organizations(
         role=boto3,
-        account_id=account_id
+        account_id=account_id,
+        cache=cache,
     )
     ou_id = organizations.get_parent_info().get("ou_parent_id")
 
     account_path = organizations.build_account_path(
-        ou_id,
-        [],  # Initial empty array to hold OU Path,
-        cache
+        ou_id=ou_id,
+        account_path=[],  # Initial empty array to hold OU Path
     )
     try:
         role = ensure_generic_account_can_be_setup(
@@ -477,6 +476,7 @@ def main():  # pylint: disable=R0915
 
     policies = OrganizationPolicy()
     config = Config()
+    cache = Cache()
 
     try:
         parameter_store = ParameterStore(REGION_DEFAULT, boto3)
@@ -485,7 +485,8 @@ def main():  # pylint: disable=R0915
         )
         organizations = Organizations(
             role=boto3,
-            account_id=deployment_account_id
+            account_id=deployment_account_id,
+            cache=cache,
         )
         policies.apply(organizations, parameter_store, config.config)
         sts = STS()
@@ -494,13 +495,10 @@ def main():  # pylint: disable=R0915
             deployment_account_id=deployment_account_id,
             config=config
         )
-
-        cache = Cache()
         ou_id = organizations.get_parent_info().get("ou_parent_id")
         account_path = organizations.build_account_path(
             ou_id=ou_id,
             account_path=[],
-            cache=cache
         )
         s3 = S3(
             region=REGION_DEFAULT,
