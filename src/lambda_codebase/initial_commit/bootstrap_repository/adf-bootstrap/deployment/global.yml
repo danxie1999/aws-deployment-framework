@@ -167,8 +167,8 @@ Resources:
                 - events.amazonaws.com
             Resource: "*"
             Condition:
-              ArnLike:
-                "aws:SourceArn": !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/*"
+              StringEquals:
+                "aws:ResourceAccount": !Ref AWS::AccountId
 
   KMSAlias:
     Type: AWS::KMS::Alias
