@@ -159,6 +159,14 @@ Parameters:
     Default: "1900-12-31T23:59:59Z"
     AllowedPattern: "\\d{4}-[0-1]\\d-[0-3]\\dT[0-2]\\d:[0-5]\\d:[0-5]\\d([+-][0-2]\\d:[0-5]\\d|Z)"
 
+  SourceType:
+    Type: String
+    Default: "CodeCommit"
+    AllowedValues:
+      - "CodeCommit"
+      - "S3"
+    Description: "Source type for the ADF Bootstrap Pipeline (CodeCommit or S3)"
+
 Globals:
   Function:
     Architectures:
@@ -178,7 +186,12 @@ Conditions:
   NotChinaMainRegion:
     "Fn::Not":
       - Condition: IsChinaMainRegion
-
+  UseS3Source: !Equals
+    - !Ref SourceType 
+    - "S3"
+  UseCodeCommitSource: !Equals 
+    - !Ref SourceType, 
+    - "CodeCommit"
 Resources:
   BootstrapTemplatesBucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -263,6 +276,63 @@ Resources:
               SSEAlgorithm: AES256
       VersioningConfiguration:
         Status: Enabled
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  SourceCodeBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Condition: UseS3Source
+    Properties:
+      Bucket: !Ref "SourceCodeBucket"
+      PolicyDocument:
+        Statement:
+          - Sid: "DenyInsecureConnections"
+            Action:
+              - "s3:*"
+            Effect: Deny
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+            Resource:
+              - !Sub arn:${AWS::Partition}:s3:::${SourceCodeBucket}
+              - !Sub arn:${AWS::Partition}:s3:::${SourceCodeBucket}/*
+            Principal:
+              AWS: "*"
+          - Sid: "DenyInsecureTLS"
+            Action:
+              - "s3:*"
+            Effect: Deny
+            Condition:
+              NumericLessThan:
+                "s3:TlsVersion": "1.2"
+            Resource:
+              - !Sub arn:${AWS::Partition}:s3:::${SourceCodeBucket}
+              - !Sub arn:${AWS::Partition}:s3:::${SourceCodeBucket}/*
+            Principal:
+              AWS: "*"
+
+  SourceCodeBucket:
+    Type: "AWS::S3::Bucket"
+    Condition: UseS3Source
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      AccessControl: BucketOwnerFullControl
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      VersioningConfiguration:
+        Status: Enabled
+      NotificationConfiguration:
+        EventBridgeConfiguration:
+          EventBridgeEnabled: true
       PublicAccessBlockConfiguration:
         BlockPublicAcls: true
         BlockPublicPolicy: true
@@ -1797,8 +1867,11 @@ Resources:
       RoleArn: !GetAtt BootstrapCodePipelineRole.Arn
       Name: "aws-deployment-framework-bootstrap-pipeline"
       Stages:
-        - Name: CodeCommit
+        - Name: Source
           Actions:
+          # CodeCommit source action (used when SourceType is CodeCommit)
+          - !If
+            - UseCodeCommitSource
             - Name: Source
               ActionTypeId:
                 Category: Source
@@ -1811,6 +1884,20 @@ Resources:
                 BranchName: !GetAtt DetermineDefaultBranchName.DefaultBranchName
                 RepositoryName: !GetAtt CodeCommitRepository.Name
                 PollForSourceChanges: false
+              RunOrder: 1
+            # S3 source action (used when SourceType is S3)
+            - Name: Source
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Version: "1"
+                Provider: S3
+              OutputArtifacts:
+                - Name: "TemplateSource"
+              Configuration:
+                S3Bucket: !Ref SourceCodeBucket
+                S3ObjectKey: "aws-deployment-framework-bootstrap.zip"
+                PollForSourceChanges: true
               RunOrder: 1
         - Name: EnableBootstrappingViaJumpRole
           Actions:
@@ -1893,6 +1980,14 @@ Resources:
                 Resource:
                   - !GetAtt "BootstrapArtifactStorageBucket.Arn"
                   - !Sub "${BootstrapArtifactStorageBucket.Arn}/*"
+                  - !If 
+                    - UseS3Source
+                    - !GetAtt "SourceCodeBucket.Arn"
+                    - !Ref "AWS::NoValue"
+                  - !If 
+                    - UseS3Source
+                    - !Sub "${SourceCodeBucket.Arn}/*"
+                    - !Ref "AWS::NoValue"
               - Effect: Allow
                 Sid: "CodeBuild"
                 Action:
@@ -1900,16 +1995,19 @@ Resources:
                   - "codebuild:StartBuild"
                 Resource:
                   - !GetAtt CodeBuildProject.Arn
-              - Effect: Allow
-                Sid: "CodeCommit"
-                Action:
-                  - "codecommit:GetBranch"
-                  - "codecommit:GetCommit"
-                  - "codecommit:UploadArchive"
-                  - "codecommit:GetUploadArchiveStatus"
-                  - "codecommit:CancelUploadArchive"
-                Resource:
-                  - !GetAtt CodeCommitRepository.Arn
+              - !If
+                - UseCodeCommitSource
+                - Effect: Allow
+                  Sid: "CodeCommit"
+                  Action:
+                    - "codecommit:GetBranch"
+                    - "codecommit:GetCommit"
+                    - "codecommit:UploadArchive"
+                    - "codecommit:GetUploadArchiveStatus"
+                    - "codecommit:CancelUploadArchive"
+                  Resource:
+                    - !GetAtt CodeCommitRepository.Arn
+                - !Ref "AWS::NoValue"
               - Effect: Allow
                 Sid: "Lambda"
                 Action:
@@ -2195,6 +2293,7 @@ Resources:
 
   DetermineDefaultBranchName:
     Type: Custom::DetermineDefaultBranchName
+    Condition: UseCodeCommitSource
     Properties:
       ServiceToken: !GetAtt DetermineDefaultBranchNameHandler.Arn
       Version: !FindInMap ["Metadata", "ADF", "Version"]
@@ -2202,6 +2301,7 @@ Resources:
 
   DetermineDefaultBranchNameHandler:
     Type: AWS::Serverless::Function
+    Condition: UseCodeCommitSource
     Properties:
       Handler: handler.lambda_handler
       CodeUri: lambda_codebase/initial_commit/bootstrap_repository/adf-bootstrap/deployment/lambda_codebase/determine_default_branch
@@ -2221,6 +2321,7 @@ Resources:
 
   InitialCommit:
     Type: Custom::InitialCommit
+    Condition: UseCodeCommitSource
     Properties:
       ServiceToken: !GetAtt InitialCommitHandler.Arn
       Version: !FindInMap ["Metadata", "ADF", "Version"]
@@ -2239,6 +2340,7 @@ Resources:
 
   InitialCommitHandler:
     Type: AWS::Serverless::Function
+    Condition: UseCodeCommitSource
     Properties:
       Handler: handler.lambda_handler
       CodeUri: lambda_codebase/initial_commit
@@ -2701,7 +2803,10 @@ Resources:
             Action: sts:AssumeRole
             Condition:
               ArnEquals:
-                "aws:SourceArn": !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/adf-bootstrap-pipeline-watch-repo"
+                "aws:SourceArn": !If 
+                - UseS3Source
+                - !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/adf-bootstrap-pipeline-watch-s3"
+                - !Sub "arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/adf-bootstrap-pipeline-watch-repo"
       Policies:
         - PolicyName: adf-bootstrap-execute-cwe
           PolicyDocument:
@@ -2711,8 +2816,9 @@ Resources:
                 Action: codepipeline:StartPipelineExecution
                 Resource: !Sub "arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:${CodePipeline}"
 
-  PipelineCloudWatchEventRule:
+  CodeCommitPipelineCloudWatchEventRule:
     Type: "AWS::Events::Rule"
+    Condition: UseCodeCommitSource
     Properties:
       Name: "adf-bootstrap-pipeline-watch-repo"
       EventPattern:
@@ -2735,6 +2841,29 @@ Resources:
           RoleArn: !GetAtt PipelineCloudWatchEventRole.Arn
           Id: adf-codepipeline-trigger-bootstrap
 
+  S3PipelineCloudWatchEventRule:
+    Type: "AWS::Events::Rule"
+    Condition: UseS3Source
+    Properties:
+      Name: "adf-bootstrap-pipeline-watch-s3"
+      EventPattern:
+        source:
+          - aws.s3
+        detail-type: 
+          - "Object Created"
+          - "Object Copy"
+        detail:
+          bucket:
+            name:
+              - !Ref SourceCodeBucket
+          object:
+            key:
+              - "source.zip"  # Specify the key pattern to match
+      Targets:
+        - Arn: !Sub "arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:aws-deployment-framework-bootstrap-pipeline"
+          RoleArn: !GetAtt PipelineCloudWatchEventRole.Arn
+          Id: adf-codepipeline-trigger-bootstrap
+
 Outputs:
   ADFVersionNumber:
     Value: !FindInMap ["Metadata", "ADF", "Version"]
@@ -2742,13 +2871,22 @@ Outputs:
       Name: "ADFVersionNumber"
 
   CodeCommitHttpURL:
+    Condition: UseCodeCommitSource
     Description: "The CodeCommit HTTP Url"
     Value: !GetAtt CodeCommitRepository.CloneUrlHttp
     Export:
       Name: "BaseTemplatesRepoHttpURL"
 
   CodeCommitSshURL:
+    Condition: UseCodeCommitSource
     Description: "The CodeCommit SSH Url"
     Value: !GetAtt CodeCommitRepository.CloneUrlSsh
     Export:
       Name: "BaseTemplatesRepoSSHURL"
+
+  S3SourceBucket:
+    Condition: UseS3Source
+    Description: "The S3 bucket used as source"
+    Value: !Ref SourceCodeBucket
+    Export:
+      Name: "SourceCodeBucketName"
