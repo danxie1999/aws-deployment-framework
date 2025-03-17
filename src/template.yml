@@ -190,7 +190,7 @@ Conditions:
     - !Ref SourceType 
     - "S3"
   UseCodeCommitSource: !Equals 
-    - !Ref SourceType, 
+    - !Ref SourceType
     - "CodeCommit"
 Resources:
   BootstrapTemplatesBucketPolicy:
