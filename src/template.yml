@@ -167,6 +167,16 @@ Parameters:
       - "S3"
     Description: "Source type for the ADF Bootstrap Pipeline (CodeCommit or S3)"
 
+  S3SourceObjectKey:
+    Type: String
+    Default: "aws-deployment-framework-bootstrap.zip"
+    Description: "The S3 object key for the ADF Bootstrap source code (only used when SourceType is S3)"
+    
+  S3SourceBucketName:
+    Type: String
+    Default: ""
+    Description: "The S3 bucket name for the ADF Bootstrap source code (only used when SourceType is S3). If left empty, a new bucket will be created."
+
 Globals:
   Function:
     Architectures:
@@ -192,6 +202,11 @@ Conditions:
   UseCodeCommitSource: !Equals 
     - !Ref SourceType
     - "CodeCommit"
+  HasS3SourceBucketName: !Not
+    - !Equals
+      - !Ref S3SourceBucketName
+      - ""
+
 Resources:
   BootstrapTemplatesBucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -321,6 +336,10 @@ Resources:
     UpdateReplacePolicy: Retain
     Properties:
       AccessControl: BucketOwnerFullControl
+      BucketName: !If 
+        - HasS3SourceBucketName
+        - !Ref S3SourceBucketName
+        - !Ref "AWS::NoValue"
       OwnershipControls:
         Rules:
           - ObjectOwnership: BucketOwnerEnforced
@@ -1896,7 +1915,7 @@ Resources:
                 - Name: "TemplateSource"
               Configuration:
                 S3Bucket: !Ref SourceCodeBucket
-                S3ObjectKey: "aws-deployment-framework-bootstrap.zip"
+                S3ObjectKey: !Ref S3SourceObjectKey
                 PollForSourceChanges: true
               RunOrder: 1
         - Name: EnableBootstrappingViaJumpRole
@@ -1980,14 +1999,20 @@ Resources:
                 Resource:
                   - !GetAtt "BootstrapArtifactStorageBucket.Arn"
                   - !Sub "${BootstrapArtifactStorageBucket.Arn}/*"
-                  - !If 
-                    - UseS3Source
+              - !If
+                - UseS3Source
+                - Effect: Allow
+                  Sid: "S3Source"
+                  Action:
+                    - "s3:GetObject"
+                    - "s3:GetObjectVersion"
+                    - "s3:ListBucket"
+                    - "s3:ListBucketVersions"
+                    - "s3:PutObject"
+                  Resource:
                     - !GetAtt "SourceCodeBucket.Arn"
-                    - !Ref "AWS::NoValue"
-                  - !If 
-                    - UseS3Source
                     - !Sub "${SourceCodeBucket.Arn}/*"
-                    - !Ref "AWS::NoValue"
+                - !Ref "AWS::NoValue"
               - Effect: Allow
                 Sid: "CodeBuild"
                 Action:
@@ -2858,7 +2883,7 @@ Resources:
               - !Ref SourceCodeBucket
           object:
             key:
-              - "source.zip"  # Specify the key pattern to match
+              - !Ref S3SourceObjectKey
       Targets:
         - Arn: !Sub "arn:${AWS::Partition}:codepipeline:${AWS::Region}:${AWS::AccountId}:aws-deployment-framework-bootstrap-pipeline"
           RoleArn: !GetAtt PipelineCloudWatchEventRole.Arn
