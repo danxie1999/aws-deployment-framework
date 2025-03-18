@@ -2006,6 +2006,7 @@ Resources:
                   Action:
                     - "s3:GetObject"
                     - "s3:GetObjectVersion"
+                    - "s3:GetBucketVersioning"
                     - "s3:ListBucket"
                     - "s3:ListBucketVersions"
                     - "s3:PutObject"
