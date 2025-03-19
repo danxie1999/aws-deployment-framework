@@ -2397,6 +2397,7 @@ Resources:
   InitialS3Source:
     Type: Custom::InitialS3Source
     Condition: UseS3Source
+    DependsOn: SourceCodeBucket
     Properties:
       ServiceToken: !GetAtt InitialS3SourceHandler.Arn
       Version: !FindInMap ["Metadata", "ADF", "Version"]
