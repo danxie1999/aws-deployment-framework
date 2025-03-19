@@ -91,6 +91,7 @@ class CustomResourceProperties:
     NotificationEndpoint: Optional[str] = None
     NotificationEndpointType: Optional[str] = None
     ProtectedOUs: Optional[List[str]] = None
+    SourceType: Optional[str] = None
 
     def __post_init__(self):
         if self.NotificationEndpoint:

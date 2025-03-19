@@ -3,11 +3,17 @@
 
 """
 The Initial Commit Handler that is called when ADF is installed to commit the
-initial bootstrap repository content.
+initial bootstrap repository/S3 content.
 """
 
 try:
-    from initial_commit import lambda_handler  # pylint: disable=unused-import
+    SourceType = os.environ.get("SourceType", "CodeCommit")
+    if SourceType == "CodeCommit":
+        from initial_commit import lambda_handler # pylint: disable=unused-import
+    elif SourceType == "S3":
+        from initial_s3 import lambda_handler # pylint: disable=unused-import
+    else:
+        raise ValueError(f"Unknown SourceType: {SourceType}")
 except Exception as err:  # pylint: disable=broad-except
     import os
     import logging

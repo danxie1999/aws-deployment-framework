@@ -1757,6 +1757,7 @@ Resources:
 
   CodeCommitRepository:
     Type: AWS::CodeCommit::Repository
+    Condition: UseCodeCommitSource
     Properties:
       RepositoryName: "aws-deployment-framework-bootstrap"
       RepositoryDescription: !Sub >-
@@ -2363,6 +2364,7 @@ Resources:
       ProtectedOUs: !Ref ProtectedOUs
       NotificationEndpoint: !Ref MainNotificationEndpoint
       DefaultBranchName: !GetAtt DetermineDefaultBranchName.DefaultBranchName
+      SourceType: !Ref SourceType
 
   InitialCommitHandler:
     Type: AWS::Serverless::Function
@@ -2391,6 +2393,55 @@ Resources:
       FunctionName: BootstrapCreateInitialCommitFunction
     Metadata:
       BuildMethod: python3.12
+
+  InitialS3Source:
+    Type: Custom::InitialS3Source
+    Condition: UseS3Source
+    Properties:
+      ServiceToken: !GetAtt InitialS3SourceHandler.Arn
+      Version: !FindInMap ["Metadata", "ADF", "Version"]
+      DirectoryName: bootstrap_repository
+      ExistingAccountId: !GetAtt DeploymentAccount.AccountId
+      DeploymentAccountRegion: !Ref DeploymentAccountMainRegion
+      DeploymentAccountFullName: !Ref DeploymentAccountName
+      DeploymentAccountEmailAddress: !Ref DeploymentAccountEmailAddress
+      DeploymentAccountAlias: !Ref DeploymentAccountAlias
+      CrossAccountAccessRole: !Ref CrossAccountAccessRoleName
+      TargetRegions: !Ref DeploymentAccountTargetRegions
+      ProtectedOUs: !Ref ProtectedOUs
+      NotificationEndpoint: !Ref MainNotificationEndpoint
+      SourceType: !Ref SourceType
+      BucketName: !Ref SourceCodeBucket
+      ObjectKey: !Ref S3SourceObjectKey
+
+  InitialS3SourceHandler:
+    Type: AWS::Serverless::Function
+    Condition: UseS3Source
+    Properties:
+      Handler: handler.lambda_handler
+      CodeUri: lambda_codebase/initial_commit
+      Description: !Sub >-
+        ADF - Installer - Initial S3 Object Bootstrap.
+
+        Creates the initial S3 source Object ${S3SourceObjectKey}. As required to install/update
+        ADF.
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+              Action:
+                - "s3:GetObject"
+                - "s3:GetObjectVersion"
+                - "s3:GetBucketVersioning"
+                - "s3:ListBucket"
+                - "s3:ListBucketVersions"
+                - "s3:PutObject"
+              Resource:
+                - !GetAtt "SourceCodeBucket.Arn"
+                - !Sub "${SourceCodeBucket.Arn}/*"
+      FunctionName: BootstrapCreateInitialS3SourceFunction
+    Metadata:
+      BuildMethod: python3.12
+
 
   SharedModulesBucket:
     Type: Custom::CrossRegionBucket
