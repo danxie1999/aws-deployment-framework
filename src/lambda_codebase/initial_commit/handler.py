@@ -5,7 +5,7 @@
 The Initial Commit Handler that is called when ADF is installed to commit the
 initial bootstrap repository/S3 content.
 """
-
+import os
 try:
     SourceType = os.environ.get("SourceType", "CodeCommit")
     if SourceType == "CodeCommit":
