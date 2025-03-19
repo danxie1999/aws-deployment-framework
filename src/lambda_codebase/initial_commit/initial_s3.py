@@ -341,7 +341,7 @@ def create_(
         LOGGER.info(f"object {object_key} already exits in the bucket {bucket_name}.")
     if create_object:
         generate_s3_source_object(
-            event, 
+            create_event, 
             directory, 
             bucket_name, 
             object_key
@@ -366,7 +366,7 @@ def update_(
         LOGGER.info(f"object {object_key} already exits in the bucket {bucket_name}.")
     if create_object:
         generate_s3_source_object(
-            event, 
+            update_event, 
             directory, 
             bucket_name, 
             object_key
