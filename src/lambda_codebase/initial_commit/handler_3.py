@@ -3,11 +3,10 @@
 
 """
 The Initial Commit Handler that is called when ADF is installed to commit the
-initial bootstrap repository content.
+initial bootstrap S3 content.
 """
-import os
 try:
-    from initial_commit import lambda_handler # pylint: disable=unused-import
+    from initial_s3 import lambda_handler # pylint: disable=unused-import
 except Exception as err:  # pylint: disable=broad-except
     import os
     import logging

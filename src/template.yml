@@ -2370,7 +2370,7 @@ Resources:
     Type: AWS::Serverless::Function
     Condition: UseCodeCommitSource
     Properties:
-      Handler: handler.lambda_handler
+      Handler: handler_3.lambda_handler
       CodeUri: lambda_codebase/initial_commit
       Description: !Sub >-
         ADF - Installer - Initial Commit Bootstrap.
@@ -2419,7 +2419,7 @@ Resources:
     Condition: UseS3Source
     Properties:
       Handler: handler.lambda_handler
-      CodeUri: lambda_codebase/initial_s3
+      CodeUri: lambda_codebase/initial_commit
       Description: !Sub >-
         ADF - Installer - Initial S3 Object Bootstrap.
 
