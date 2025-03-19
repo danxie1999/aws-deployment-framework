@@ -2419,7 +2419,7 @@ Resources:
     Condition: UseS3Source
     Properties:
       Handler: handler.lambda_handler
-      CodeUri: lambda_codebase/initial_commit
+      CodeUri: lambda_codebase/initial_s3
       Description: !Sub >-
         ADF - Installer - Initial S3 Object Bootstrap.
 
