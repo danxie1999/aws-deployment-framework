@@ -2429,8 +2429,8 @@ Resources:
     Condition: UseS3Source
     DependsOn: !If 
       - CreateNewS3SourceBucket
-      - !Ref SourceCodeBucket
-      - !Ref InitialCommitHandler
+      - SourceCodeBucket
+      - InitialCommitHandler
     Properties:
       ServiceToken: !GetAtt InitialS3SourceHandler.Arn
       Version: !FindInMap ["Metadata", "ADF", "Version"]
