@@ -227,6 +227,10 @@ Conditions:
   CreateNewS3SourceBucket: !And
     - !Condition UseS3Source
     - !Condition NoExistingS3SourceBucket
+  ExistS3SourceBucket: !And
+    - !Condition UseS3Source
+    - !Condition HasExistingS3SourceBucket
+
 
 Resources:
   BootstrapTemplatesBucketPolicy:
@@ -2424,13 +2428,10 @@ Resources:
     Metadata:
       BuildMethod: python3.12
 
-  InitialS3Source:
+  InitialS3SourceWithNewBucket:
     Type: Custom::InitialS3Source
-    Condition: UseS3Source
-    DependsOn: !If 
-      - CreateNewS3SourceBucket
-      - SourceCodeBucket
-      - InitialCommitHandler
+    Condition: CreateNewS3SourceBucket
+    DependsOn: SourceCodeBucket
     Properties:
       ServiceToken: !GetAtt InitialS3SourceHandler.Arn
       Version: !FindInMap ["Metadata", "ADF", "Version"]
@@ -2445,11 +2446,29 @@ Resources:
       ProtectedOUs: !Ref ProtectedOUs
       NotificationEndpoint: !Ref MainNotificationEndpoint
       SourceType: !Ref SourceType
-      BucketName: !If
-        - CreateNewS3SourceBucket
-        - !Ref SourceCodeBucket
-        - !Ref S3SourceBucketName   
+      BucketName: !Ref SourceCodeBucket 
       ObjectKey: !Ref S3SourceObjectKey
+
+  InitialS3SourceWithExitsingBucket:
+    Type: Custom::InitialS3Source
+    Condition: ExistS3SourceBucket
+    Properties:
+      ServiceToken: !GetAtt InitialS3SourceHandler.Arn
+      Version: !FindInMap ["Metadata", "ADF", "Version"]
+      DirectoryName: bootstrap_repository
+      ExistingAccountId: !GetAtt DeploymentAccount.AccountId
+      DeploymentAccountRegion: !Ref DeploymentAccountMainRegion
+      DeploymentAccountFullName: !Ref DeploymentAccountName
+      DeploymentAccountEmailAddress: !Ref DeploymentAccountEmailAddress
+      DeploymentAccountAlias: !Ref DeploymentAccountAlias
+      CrossAccountAccessRole: !Ref CrossAccountAccessRoleName
+      TargetRegions: !Ref DeploymentAccountTargetRegions
+      ProtectedOUs: !Ref ProtectedOUs
+      NotificationEndpoint: !Ref MainNotificationEndpoint
+      SourceType: !Ref SourceType
+      BucketName: !Ref S3SourceBucketName   
+      ObjectKey: !Ref S3SourceObjectKey
+
 
   InitialS3SourceHandler:
     Type: AWS::Serverless::Function
