@@ -177,6 +177,14 @@ Parameters:
     Default: ""
     Description: "The S3 bucket name for the ADF Bootstrap source code (only used when SourceType is S3). If left empty, a new bucket will be created."
 
+  UseExistingS3SourceBucket:
+    Description: "Use an existing S3 bucket for the ADF Bootstrap source code (only used when SourceType is S3). If set Yes, The source will direct to the existing S3 bucket."
+    Type: String
+    Default: "No"
+    AllowedValues:
+      - "Yes"
+      - "No"
+
 Globals:
   Function:
     Architectures:
@@ -206,6 +214,15 @@ Conditions:
     - !Equals
       - !Ref S3SourceBucketName
       - ""
+  HasExistingS3SourceBucket: !Equals
+    - !Ref UseExistingS3SourceBucket
+    - "Yes"
+  NoExistingS3SourceBucket: !Equals
+    - !Ref UseExistingS3SourceBucket
+    - "No"
+  CreateNewS3SourceBucket: !And
+    - !Condition UseS3Source
+    - !Condition NoExistingS3SourceBucket
 
 Resources:
   BootstrapTemplatesBucketPolicy:
@@ -299,7 +316,7 @@ Resources:
 
   SourceCodeBucketPolicy:
     Type: AWS::S3::BucketPolicy
-    Condition: UseS3Source
+    Condition: CreateNewS3SourceBucket
     Properties:
       Bucket: !Ref "SourceCodeBucket"
       PolicyDocument:
@@ -331,7 +348,7 @@ Resources:
 
   SourceCodeBucket:
     Type: "AWS::S3::Bucket"
-    Condition: UseS3Source
+    Condition: CreateNewS3SourceBucket
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
     Properties:
@@ -1915,7 +1932,10 @@ Resources:
               OutputArtifacts:
                 - Name: "TemplateSource"
               Configuration:
-                S3Bucket: !Ref SourceCodeBucket
+                S3Bucket: !If
+                  - CreateNewS3SourceBucket
+                  - !Ref SourceCodeBucket
+                  - !Ref S3SourceBucketName                
                 S3ObjectKey: !Ref S3SourceObjectKey
                 PollForSourceChanges: true
               RunOrder: 1
@@ -2011,9 +2031,15 @@ Resources:
                     - "s3:ListBucket"
                     - "s3:ListBucketVersions"
                     - "s3:PutObject"
-                  Resource:
-                    - !GetAtt "SourceCodeBucket.Arn"
-                    - !Sub "${SourceCodeBucket.Arn}/*"
+                  Resource: 
+                    - !If
+                      - CreateNewS3SourceBucket
+                      - !GetAtt "SourceCodeBucket.Arn"
+                      - !Sub "arn:${AWS::Partition}:s3:::${S3SourceBucketName}"
+                    - !If 
+                      - CreateNewS3SourceBucket
+                      - !Sub "${SourceCodeBucket.Arn}/*"  
+                      - !Sub "arn:${AWS::Partition}:s3:::${S3SourceBucketName}/*"
                 - !Ref "AWS::NoValue"
               - Effect: Allow
                 Sid: "CodeBuild"
@@ -2397,7 +2423,10 @@ Resources:
   InitialS3Source:
     Type: Custom::InitialS3Source
     Condition: UseS3Source
-    DependsOn: SourceCodeBucket
+    DependsOn: !If 
+      - CreateNewS3SourceBucket
+      - SourceCodeBucket
+      - !Ref "AWS::NoValue"
     Properties:
       ServiceToken: !GetAtt InitialS3SourceHandler.Arn
       Version: !FindInMap ["Metadata", "ADF", "Version"]
@@ -2412,7 +2441,10 @@ Resources:
       ProtectedOUs: !Ref ProtectedOUs
       NotificationEndpoint: !Ref MainNotificationEndpoint
       SourceType: !Ref SourceType
-      BucketName: !Ref SourceCodeBucket
+      BucketName: !If
+        - CreateNewS3SourceBucket
+        - !Ref SourceCodeBucket
+        - !Ref S3SourceBucketName   
       ObjectKey: !Ref S3SourceObjectKey
 
   InitialS3SourceHandler:
@@ -2438,8 +2470,14 @@ Resources:
                 - "s3:ListBucketVersions"
                 - "s3:PutObject"
               Resource:
-                - !GetAtt "SourceCodeBucket.Arn"
-                - !Sub "${SourceCodeBucket.Arn}/*"
+                    - !If
+                      - CreateNewS3SourceBucket
+                      - !GetAtt "SourceCodeBucket.Arn"
+                      - !Sub "arn:${AWS::Partition}:s3:::${S3SourceBucketName}"
+                    - !If 
+                      - CreateNewS3SourceBucket
+                      - !Sub "${SourceCodeBucket.Arn}/*"  
+                      - !Sub "arn:${AWS::Partition}:s3:::${S3SourceBucketName}/*"
       FunctionName: BootstrapCreateInitialS3SourceFunction
     Metadata:
       BuildMethod: python3.12
@@ -2933,8 +2971,10 @@ Resources:
           - "Object Copy"
         detail:
           bucket:
-            name:
+            name: !If
+              - CreateNewS3SourceBucket
               - !Ref SourceCodeBucket
+              - !Ref S3SourceBucketName  
           object:
             key:
               - !Ref S3SourceObjectKey
@@ -2963,9 +3003,18 @@ Outputs:
     Export:
       Name: "BaseTemplatesRepoSSHURL"
 
-  S3SourceBucket:
+  SourceCodeBucketName:
     Condition: UseS3Source
-    Description: "The S3 bucket used as source"
-    Value: !Ref SourceCodeBucket
-    Export:
-      Name: "SourceCodeBucketName"
+    Description: "The S3 bucket Name used as source"
+    Value: !If
+      - CreateNewS3SourceBucket
+      - !Ref SourceCodeBucket
+      - !Ref S3SourceBucketName
+      
+  SourceCodeBucketArn:
+    Condition: UseS3Source
+    Description: "The ARN of the S3 Source bucket being used"
+    Value: !If
+      - CreateNewS3SourceBucket
+      - !GetAtt SourceCodeBucket.Arn
+      - !Sub "arn:${AWS::Partition}:s3:::${S3SourceBucketName}"
