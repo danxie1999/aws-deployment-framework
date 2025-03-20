@@ -178,7 +178,11 @@ Parameters:
     Description: "The S3 bucket name for the ADF Bootstrap source code (only used when SourceType is S3). If left empty, a new bucket will be created."
 
   UseExistingS3SourceBucket:
-    Description: "Use an existing S3 bucket for the ADF Bootstrap source code (only used when SourceType is S3). If set Yes, The source will direct to the existing S3 bucket."
+    Description: >-
+      Use an existing S3 bucket for the ADF Bootstrap source code 
+      (only used when SourceType is S3). If set Yes, The source will 
+      direct to the existing S3 bucket. Additionally, the bucket should 
+      be in the ADF installation account.
     Type: String
     Default: "No"
     AllowedValues:
@@ -2425,7 +2429,7 @@ Resources:
     Condition: UseS3Source
     DependsOn: !If 
       - CreateNewS3SourceBucket
-      - SourceCodeBucket
+      - !Ref SourceCodeBucket
       - !Ref "AWS::NoValue"
     Properties:
       ServiceToken: !GetAtt InitialS3SourceHandler.Arn
