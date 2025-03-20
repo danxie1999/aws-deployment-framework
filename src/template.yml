@@ -2430,7 +2430,7 @@ Resources:
     DependsOn: !If 
       - CreateNewS3SourceBucket
       - !Ref SourceCodeBucket
-      - !Ref "AWS::NoValue"
+      - !Ref InitialCommitHandler
     Properties:
       ServiceToken: !GetAtt InitialS3SourceHandler.Arn
       Version: !FindInMap ["Metadata", "ADF", "Version"]
