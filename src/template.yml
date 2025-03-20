@@ -2867,6 +2867,7 @@ Resources:
 
   CodeCommitPipelineCloudWatchEventRule:
     Type: "AWS::Events::Rule"
+    Condition: UseCodeCommitSource
     Properties:
       Name: "adf-bootstrap-pipeline-watch-repo"
       EventPattern:
