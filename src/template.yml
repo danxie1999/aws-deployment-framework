@@ -225,7 +225,6 @@ Conditions:
     - !Condition UseS3Source
     - !Condition NoExistingS3SourceBucket
 
-
 Resources:
   BootstrapTemplatesBucketPolicy:
     Type: AWS::S3::BucketPolicy

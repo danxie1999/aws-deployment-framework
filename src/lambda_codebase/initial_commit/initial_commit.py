@@ -114,6 +114,7 @@ class Event:
     ResponseURL: str
     StackId: str
     RequestId: str
+    ResourceType: str
     LogicalResourceId: str
     ResourceProperties: CustomResourceProperties
 
