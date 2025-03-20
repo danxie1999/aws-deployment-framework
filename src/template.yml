@@ -177,7 +177,7 @@ Parameters:
     Default: ""
     Description: "The S3 bucket name for the ADF Bootstrap source code (only used when SourceType is S3). If left empty, a new bucket will be created."
 
-  UseExistingS3SourceBucket:
+  S3SourceUseExistingBucket:
     Description: >-
       Use an existing S3 bucket for the ADF Bootstrap source code 
       (only used when SourceType is S3). If set Yes, The source will 
@@ -218,18 +218,12 @@ Conditions:
     - !Equals
       - !Ref S3SourceBucketName
       - ""
-  HasExistingS3SourceBucket: !Equals
-    - !Ref UseExistingS3SourceBucket
-    - "Yes"
   NoExistingS3SourceBucket: !Equals
-    - !Ref UseExistingS3SourceBucket
+    - !Ref S3SourceUseExistingBucket
     - "No"
   CreateNewS3SourceBucket: !And
     - !Condition UseS3Source
     - !Condition NoExistingS3SourceBucket
-  ExistS3SourceBucket: !And
-    - !Condition UseS3Source
-    - !Condition HasExistingS3SourceBucket
 
 
 Resources:
@@ -1782,7 +1776,6 @@ Resources:
 
   CodeCommitRepository:
     Type: AWS::CodeCommit::Repository
-    Condition: UseCodeCommitSource
     Properties:
       RepositoryName: "aws-deployment-framework-bootstrap"
       RepositoryDescription: !Sub >-
@@ -2354,7 +2347,6 @@ Resources:
 
   DetermineDefaultBranchName:
     Type: Custom::DetermineDefaultBranchName
-    Condition: UseCodeCommitSource
     Properties:
       ServiceToken: !GetAtt DetermineDefaultBranchNameHandler.Arn
       Version: !FindInMap ["Metadata", "ADF", "Version"]
@@ -2362,7 +2354,6 @@ Resources:
 
   DetermineDefaultBranchNameHandler:
     Type: AWS::Serverless::Function
-    Condition: UseCodeCommitSource
     Properties:
       Handler: handler.lambda_handler
       CodeUri: lambda_codebase/initial_commit/bootstrap_repository/adf-bootstrap/deployment/lambda_codebase/determine_default_branch
@@ -2382,7 +2373,6 @@ Resources:
 
   InitialCommit:
     Type: Custom::InitialCommit
-    Condition: UseCodeCommitSource
     Properties:
       ServiceToken: !GetAtt InitialCommitHandler.Arn
       Version: !FindInMap ["Metadata", "ADF", "Version"]
@@ -2398,11 +2388,9 @@ Resources:
       ProtectedOUs: !Ref ProtectedOUs
       NotificationEndpoint: !Ref MainNotificationEndpoint
       DefaultBranchName: !GetAtt DetermineDefaultBranchName.DefaultBranchName
-      SourceType: !Ref SourceType
 
   InitialCommitHandler:
     Type: AWS::Serverless::Function
-    Condition: UseCodeCommitSource
     Properties:
       Handler: handler.lambda_handler
       CodeUri: lambda_codebase/initial_commit
@@ -2427,84 +2415,6 @@ Resources:
       FunctionName: BootstrapCreateInitialCommitFunction
     Metadata:
       BuildMethod: python3.12
-
-  InitialS3SourceWithNewBucket:
-    Type: Custom::InitialS3Source
-    Condition: CreateNewS3SourceBucket
-    DependsOn: SourceCodeBucket
-    Properties:
-      ServiceToken: !GetAtt InitialS3SourceHandler.Arn
-      Version: !FindInMap ["Metadata", "ADF", "Version"]
-      DirectoryName: bootstrap_repository
-      ExistingAccountId: !GetAtt DeploymentAccount.AccountId
-      DeploymentAccountRegion: !Ref DeploymentAccountMainRegion
-      DeploymentAccountFullName: !Ref DeploymentAccountName
-      DeploymentAccountEmailAddress: !Ref DeploymentAccountEmailAddress
-      DeploymentAccountAlias: !Ref DeploymentAccountAlias
-      CrossAccountAccessRole: !Ref CrossAccountAccessRoleName
-      TargetRegions: !Ref DeploymentAccountTargetRegions
-      ProtectedOUs: !Ref ProtectedOUs
-      NotificationEndpoint: !Ref MainNotificationEndpoint
-      SourceType: !Ref SourceType
-      BucketName: !Ref SourceCodeBucket 
-      ObjectKey: !Ref S3SourceObjectKey
-
-  InitialS3SourceWithExitsingBucket:
-    Type: Custom::InitialS3Source
-    Condition: ExistS3SourceBucket
-    Properties:
-      ServiceToken: !GetAtt InitialS3SourceHandler.Arn
-      Version: !FindInMap ["Metadata", "ADF", "Version"]
-      DirectoryName: bootstrap_repository
-      ExistingAccountId: !GetAtt DeploymentAccount.AccountId
-      DeploymentAccountRegion: !Ref DeploymentAccountMainRegion
-      DeploymentAccountFullName: !Ref DeploymentAccountName
-      DeploymentAccountEmailAddress: !Ref DeploymentAccountEmailAddress
-      DeploymentAccountAlias: !Ref DeploymentAccountAlias
-      CrossAccountAccessRole: !Ref CrossAccountAccessRoleName
-      TargetRegions: !Ref DeploymentAccountTargetRegions
-      ProtectedOUs: !Ref ProtectedOUs
-      NotificationEndpoint: !Ref MainNotificationEndpoint
-      SourceType: !Ref SourceType
-      BucketName: !Ref S3SourceBucketName   
-      ObjectKey: !Ref S3SourceObjectKey
-
-
-  InitialS3SourceHandler:
-    Type: AWS::Serverless::Function
-    Condition: UseS3Source
-    Properties:
-      Handler: handler_s3.lambda_handler
-      CodeUri: lambda_codebase/initial_commit
-      Description: !Sub >-
-        ADF - Installer - Initial S3 Object Bootstrap.
-
-        Creates the initial S3 source Object ${S3SourceObjectKey}. As required to install/update
-        ADF.
-      Policies:
-        - Version: "2012-10-17"
-          Statement:
-            - Effect: Allow
-              Action:
-                - "s3:GetObject"
-                - "s3:GetObjectVersion"
-                - "s3:GetBucketVersioning"
-                - "s3:ListBucket"
-                - "s3:ListBucketVersions"
-                - "s3:PutObject"
-              Resource:
-                    - !If
-                      - CreateNewS3SourceBucket
-                      - !GetAtt "SourceCodeBucket.Arn"
-                      - !Sub "arn:${AWS::Partition}:s3:::${S3SourceBucketName}"
-                    - !If 
-                      - CreateNewS3SourceBucket
-                      - !Sub "${SourceCodeBucket.Arn}/*"  
-                      - !Sub "arn:${AWS::Partition}:s3:::${S3SourceBucketName}/*"
-      FunctionName: BootstrapCreateInitialS3SourceFunction
-    Metadata:
-      BuildMethod: python3.12
-
 
   SharedModulesBucket:
     Type: Custom::CrossRegionBucket
@@ -2958,7 +2868,6 @@ Resources:
 
   CodeCommitPipelineCloudWatchEventRule:
     Type: "AWS::Events::Rule"
-    Condition: UseCodeCommitSource
     Properties:
       Name: "adf-bootstrap-pipeline-watch-repo"
       EventPattern:
@@ -2996,8 +2905,8 @@ Resources:
           bucket:
             name: !If
               - CreateNewS3SourceBucket
-              - !Ref SourceCodeBucket
-              - !Ref S3SourceBucketName  
+              - [ !Ref SourceCodeBucket ]
+              - [ !Ref S3SourceBucketName ]  
           object:
             key:
               - !Ref S3SourceObjectKey
@@ -3013,14 +2922,12 @@ Outputs:
       Name: "ADFVersionNumber"
 
   CodeCommitHttpURL:
-    Condition: UseCodeCommitSource
     Description: "The CodeCommit HTTP Url"
     Value: !GetAtt CodeCommitRepository.CloneUrlHttp
     Export:
       Name: "BaseTemplatesRepoHttpURL"
 
   CodeCommitSshURL:
-    Condition: UseCodeCommitSource
     Description: "The CodeCommit SSH Url"
     Value: !GetAtt CodeCommitRepository.CloneUrlSsh
     Export:
