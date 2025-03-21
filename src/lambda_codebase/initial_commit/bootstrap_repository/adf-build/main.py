@@ -56,6 +56,10 @@ ACCOUNT_BOOTSTRAPPING_STATE_MACHINE_ARN = os.environ.get(
 )
 ADF_DEFAULT_SCM_FALLBACK_BRANCH = 'main'
 ADF_DEFAULT_DEPLOYMENT_MAPS_ALLOW_EMPTY_TARGET = 'disabled'
+ADF_DEFAULT_DEPLOYMENT_MAPS_CODEBASE_SOURCE_TYPE = 'codecommit'
+ADF_DEFAULT_DEPLOYMENT_MAPS_CODEBASE_SOURCE_S3_BUCKET_NAME = 'none'
+ADF_DEFAULT_DEPLOYMENT_MAPS_CODEBASE_SOURCE_S3_KEY = 'aws-deployment-framework-pipelines.zip'
+ADF_DEFAULT_DEPLOYMENT_MAPS_CODEBASE_SOURCE_S3_USE_EXISTING = 'disabled'
 ADF_DEFAULT_ORG_STAGE = "none"
 CHINA_PRIMARY_REGION = "cn-north-1"
 CHINA_SECONDARY_REGION = "cn-northwest-1"
@@ -208,6 +212,57 @@ def prepare_deployment_account(sts, deployment_account_id, config):
         )
     )
     deployment_account_parameter_store.put_parameter(
+        'deployment_maps/codebase-source/source-type',
+        config.config.get('deployment-maps', {}).get(
+            'codebase-source', {}
+        ).get(
+            'source-type',
+            ADF_DEFAULT_DEPLOYMENT_MAPS_CODEBASE_SOURCE_TYPE,
+        )
+    )
+    deployment_account_parameter_store.put_parameter(
+        'deployment_maps/codebase-source/source-type',
+        config.config.get('deployment-maps', {}).get(
+            'codebase-source', {}
+        ).get(
+            'source-type',
+            ADF_DEFAULT_DEPLOYMENT_MAPS_CODEBASE_SOURCE_TYPE,
+        )
+    )
+    deployment_account_parameter_store.put_parameter(
+        'deployment_maps/codebase-source/s3-source-detail/s3-bucket-name',
+        config.config.get('deployment-maps', {}).get(
+            'codebase-source', {}
+        ).get(
+            's3-source-detail', {}
+        ).get(
+            's3-bucket-name',
+            ADF_DEFAULT_DEPLOYMENT_MAPS_CODEBASE_SOURCE_S3_BUCKET_NAME,
+        )
+    )
+    deployment_account_parameter_store.put_parameter(
+        'deployment_maps/codebase-source/s3-source-detail/s3-key',
+        config.config.get('deployment-maps', {}).get(
+            'codebase-source', {}
+        ).get(
+            's3-source-detail', {}
+        ).get(
+            's3-key',
+            ADF_DEFAULT_DEPLOYMENT_MAPS_CODEBASE_SOURCE_S3_KEY,
+        )
+    )
+    deployment_account_parameter_store.put_parameter(
+        'deployment_maps/codebase-source/s3-source-detail/s3-use-existing',
+        config.config.get('deployment-maps', {}).get(
+            'codebase-source', {}
+        ).get(
+            's3-source-detail', {}
+        ).get(
+            's3-use-existing',
+            ADF_DEFAULT_DEPLOYMENT_MAPS_CODEBASE_SOURCE_S3_USE_EXISTING,
+        )
+    )
+    deployment_account_parameter_store.put_parameter(
         'org/stage',
         config.config.get('org', {}).get(
             'stage',
@@ -248,7 +303,6 @@ def _store_extension_parameters(parameter_store, config):
                 f"extensions/{extension}/{attribute}",
                 str(attributes[attribute]),
             )
-
 
 # pylint: disable=too-many-locals
 def worker_thread(

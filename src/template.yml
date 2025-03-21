@@ -1937,7 +1937,7 @@ Resources:
                   - !Ref SourceCodeBucket
                   - !Ref S3SourceBucketName                
                 S3ObjectKey: !Ref S3SourceObjectKey
-                PollForSourceChanges: true
+                PollForSourceChanges: false
               RunOrder: 1
         - Name: EnableBootstrappingViaJumpRole
           Actions:
