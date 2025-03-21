@@ -221,15 +221,6 @@ def prepare_deployment_account(sts, deployment_account_id, config):
         )
     )
     deployment_account_parameter_store.put_parameter(
-        'deployment_maps/codebase-source/source-type',
-        config.config.get('deployment-maps', {}).get(
-            'codebase-source', {}
-        ).get(
-            'source-type',
-            ADF_DEFAULT_DEPLOYMENT_MAPS_CODEBASE_SOURCE_TYPE,
-        )
-    )
-    deployment_account_parameter_store.put_parameter(
         'deployment_maps/codebase-source/s3-source-detail/s3-bucket-name',
         config.config.get('deployment-maps', {}).get(
             'codebase-source', {}

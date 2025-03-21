@@ -53,7 +53,7 @@ Parameters:
   S3SourceUseExistingBucket:
     Type: "AWS::SSM::Parameter::Value<String>"
     Description: Use an existing S3 bucket for the Deployment Map S3 Source Bucket, by default a new bucket will be created
-    Default: deployment_maps/codebase-source/s3-source-detail/s3-use-existing
+    Default: /adf/deployment_maps/codebase-source/s3-source-detail/s3-use-existing
 
   Image:
     Description: The Image you wish to use for CodeBuild (defaults to Ubuntu - standard:7.0).

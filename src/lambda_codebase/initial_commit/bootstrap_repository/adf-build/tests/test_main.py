@@ -134,7 +134,7 @@ def test_prepare_deployment_account_defaults(param_store_cls, cls, sts):
     )
     for param_store in parameter_store_list:
         assert param_store.put_parameter.call_count == (
-            16 if param_store == deploy_param_store else 9
+            20 if param_store == deploy_param_store else 9
         )
         param_store.put_parameter.assert_has_calls(
             [
@@ -162,6 +162,10 @@ def test_prepare_deployment_account_defaults(param_store_cls, cls, sts):
             ),
             call('scm/default-s3-source-bucket-name', 'some_bucket'),
             call('deployment_maps/allow_empty_target', 'disabled'),
+            call('deployment_maps/codebase-source/source-type', 'codecommit'),
+            call('deployment_maps/codebase-source/s3-source-detail/s3-bucket-name', 'none'),
+            call('deployment_maps/codebase-source/s3-source-detail/s3-key', 'aws-deployment-framework-pipelines.zip'),
+            call('deployment_maps/codebase-source/s3-source-detail/s3-use-existing', 'disabled'),
             call('org/stage', 'none'),
             call('notification_type', 'email'),
             call('notification_endpoint', 'john@example.com'),
@@ -237,7 +241,7 @@ def test_prepare_deployment_account_specific_config(param_store_cls, cls, sts):
     )
     for param_store in parameter_store_list:
         assert param_store.put_parameter.call_count == (
-            18 if param_store == deploy_param_store else 9
+            22 if param_store == deploy_param_store else 9
         )
         param_store.put_parameter.assert_has_calls(
             [
@@ -266,6 +270,10 @@ def test_prepare_deployment_account_specific_config(param_store_cls, cls, sts):
             ),
             call('scm/default-s3-source-bucket-name', 'some_bucket'),
             call('deployment_maps/allow_empty_target', 'disabled'),
+            call('deployment_maps/codebase-source/source-type', 'codecommit'),
+            call('deployment_maps/codebase-source/s3-source-detail/s3-bucket-name', 'none'),
+            call('deployment_maps/codebase-source/s3-source-detail/s3-key', 'aws-deployment-framework-pipelines.zip'),
+            call('deployment_maps/codebase-source/s3-source-detail/s3-use-existing', 'disabled'),
             call('org/stage', 'test-stage'),
             call('notification_type', 'slack'),
             call(
