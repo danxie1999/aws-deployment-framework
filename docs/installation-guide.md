@@ -602,6 +602,7 @@ directed to the existing S3 bucket.
 
 Additionally, the bucket must be located in the ADF installation account.
 The S3 bucket following configured:
+
 - [versioning](https://docs.aws.amazon.com/AmazonS3/latest/userguide/manage-versioning-examples.html)
 - [S3 notifications](https://docs.aws.amazon.com/AmazonS3/latest/userguide/enable-event-notifications-eventbridge.html)
 
