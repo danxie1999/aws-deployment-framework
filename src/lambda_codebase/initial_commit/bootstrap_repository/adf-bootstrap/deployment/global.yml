@@ -2245,6 +2245,12 @@ Resources:
                 Action:
                   - "s3:DeleteBucketPolicy"
                 Resource: "*"
+              - Sid: "IAMUpdatePolicy"
+                Effect: "Allow"
+                Action:
+                  - "iam:PutRolePolicy"
+                Resource:
+                  - !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/adf/bootstrap/adf-bootstrap-update-deployment-role"
               - !If
                 - UseS3Source
                 - Effect: Allow
